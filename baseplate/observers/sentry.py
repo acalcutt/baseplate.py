@@ -5,7 +5,6 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any
 
 import sentry_sdk
-import inspect
 
 from baseplate import BaseplateObserver, RequestContext, ServerSpanObserver, Span, _ExcInfo
 from baseplate.lib import config
@@ -81,38 +80,8 @@ def init_sentry_client_from_config(raw_config: config.RawConfig, **kwargs: Any) 
 
     kwargs.setdefault("with_locals", False)
 
-    # Try to initialize the Sentry client in a way that is compatible with
-    # multiple sentry-sdk major versions. Some kwargs (eg. ``with_locals``)
-    # may be accepted by older versions and rejected by newer ones. Attempt
-    # a best-effort initialization and fall back to a sanitized kwargs set
-    # if we encounter a TypeError from the SDK.
-    try:
-        if hasattr(sentry_sdk, "Client"):
-            client = sentry_sdk.Client(**kwargs)
-            sentry_sdk.Hub.current.bind_client(client)
-        else:
-            # Newer SDKs provide top-level init() which configures the
-            # current hub.
-            sentry_sdk.init(**kwargs)
-    except TypeError as exc:
-        logger.warning("sentry-sdk rejected kwargs: %s; retrying without unsupported args", exc)
-        try:
-            # Prefer init if available, otherwise fall back to Client.
-            init_callable = getattr(sentry_sdk, "init", None) or getattr(sentry_sdk, "Client", None)
-            if init_callable is None:
-                logger.warning("sentry-sdk has no init or Client; skipping sentry initialization")
-                return
-
-            sig = inspect.signature(init_callable)
-            accepted_kwargs = {k: v for k, v in kwargs.items() if k in sig.parameters}
-
-            if init_callable is sentry_sdk.Client:
-                client = sentry_sdk.Client(**accepted_kwargs)
-                sentry_sdk.Hub.current.bind_client(client)
-            else:
-                sentry_sdk.init(**accepted_kwargs)
-        except Exception:
-            logger.exception("Failed to initialize sentry client after sanitizing kwargs; skipping sentry init")
+    client = sentry_sdk.Client(**kwargs)
+    sentry_sdk.Hub.current.bind_client(client)
 
 
 class SentryBaseplateObserver(BaseplateObserver):

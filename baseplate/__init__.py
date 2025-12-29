@@ -10,8 +10,6 @@ import gevent.monkey
 from pkg_resources import DistributionNotFound, get_distribution
 
 from baseplate.lib import UnknownCallerError, config, get_calling_module_name, metrics
-from baseplate.lib import warn_deprecated
-from baseplate.lib.crypto import validate_signature, SignatureError
 
 try:
     __version__ = get_distribution(__name__).version
@@ -737,39 +735,3 @@ class ServerSpan(LocalSpan):
 
 
 __all__ = ["Baseplate"]
-
-
-# Convenience adapters for callers that previously imported these helpers
-# directly from baseplate. They are thin wrappers around the stable
-# implementations in ``baseplate.lib`` and ``baseplate.observers`` and emit
-# a deprecation warning so callers can migrate to the new APIs.
-def metrics_client_from_config(raw_config, *args, **kwargs):
-    warn_deprecated(
-        "baseplate.metrics_client_from_config is deprecated; import from baseplate.lib.metrics or use Baseplate.configure_observers()"
-    )
-    from baseplate.lib.metrics import metrics_client_from_config as _metrics_cf
-
-    return _metrics_cf(raw_config, *args, **kwargs)
-
-
-def secrets_store_from_config(raw_config, *args, **kwargs):
-    warn_deprecated(
-        "baseplate.secrets_store_from_config is deprecated; import from baseplate.lib.secrets"
-    )
-    from baseplate.lib.secrets import secrets_store_from_config as _secrets_cf
-
-    return _secrets_cf(raw_config, *args, **kwargs)
-
-
-def error_reporter_from_config(raw_config, *args, **kwargs):
-    warn_deprecated(
-        "baseplate.error_reporter_from_config is deprecated; use Baseplate.configure_observers() or baseplate.observers.sentry.init_sentry_client_from_config"
-    )
-    from baseplate.observers.sentry import init_sentry_client_from_config as _init_sentry
-
-    return _init_sentry(raw_config, *args, **kwargs)
-
-
-# Expose crypto helpers at top-level for compatibility
-# validate_signature and SignatureError are imported above.
-__all__.extend(["metrics_client_from_config", "secrets_store_from_config", "error_reporter_from_config", "validate_signature", "SignatureError"])
