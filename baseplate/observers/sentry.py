@@ -15,6 +15,10 @@ if TYPE_CHECKING:
     from gevent.hub import Hub as GeventHub
 
 
+# Module logger
+logger = logging.getLogger(__name__)
+
+
 ALWAYS_IGNORE_ERRORS = (
     "baseplate.observers.timeout.ServerTimeout",
     "ConnectionError",
